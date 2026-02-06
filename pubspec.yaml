@@ -57,6 +57,8 @@ dependencies:
   # Sound effects
   audioplayers: ^6.5.1
 
+  web:
+
 dev_dependencies:
   flutter_test:
     sdk: flutter

@@ -1,8 +1,10 @@
-import 'dart:html' as html;
+
+
+import 'package:web/web.dart' as html;
 
 Future<void> requestMotionPermission() async {
   try {
-    await html.window.navigator.permissions?.query(
+    html.window.navigator.permissions.query(
       {'name': 'accelerometer'} as dynamic,
     );
   } catch (e) {

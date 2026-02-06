@@ -1,8 +1,9 @@
-import 'dart:html' as html;
+import 'package:web/web.dart' as html;
 
 Future<void> lockLandscape() async {
   try {
-    await html.window.screen?.orientation?.lock('landscape');
+    html.document.documentElement?.requestFullscreen();
+    html.window.screen.orientation.lock('landscape');
   } catch (_) {
     // Some browsers require explicit user gesture; ignore errors.
   }
@@ -10,7 +11,7 @@ Future<void> lockLandscape() async {
 
 Future<void> unlockOrientation() async {
   try {
-    html.window.screen?.orientation?.unlock();
+    html.window.screen.orientation.unlock();
   } catch (_) {
     // Ignore when unsupported.
   }
