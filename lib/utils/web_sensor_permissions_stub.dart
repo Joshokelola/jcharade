@@ -1,0 +1,1 @@
+Future<void> requestMotionPermission() async {}

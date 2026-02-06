@@ -2,9 +2,17 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'screens/home/home_screen.dart';
+import 'screens/unsupported/unsupported_device_app.dart';
+import 'utils/device_support.dart';
 
 void main() {
-  runApp(const ProviderScope(child: MyApp()));
+  WidgetsFlutterBinding.ensureInitialized();
+  final isMobile = DeviceSupport.isMobileOrTablet;
+  runApp(
+    ProviderScope(
+      child: isMobile ? const MyApp() : const UnsupportedDeviceApp(),
+    ),
+  );
 }
 
 class MyApp extends StatelessWidget {

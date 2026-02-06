@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:math' as math;
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -7,6 +8,8 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:all_sensors/all_sensors.dart';
 import 'package:audioplayers/audioplayers.dart';
 import 'package:jcharade/utils/helpers.dart';
+import 'package:jcharade/utils/web_sensor_permissions.dart' as web_sensors;
+import 'package:jcharade/utils/web_orientation.dart' as web_orientation;
 import '../../models/word.dart';
 import '../../providers/game_provider.dart';
 import '../results/results_screen.dart';
@@ -63,15 +66,18 @@ class _GameScreenState extends ConsumerState<GameScreen>
     super.initState();
 
     // Force landscape orientation
-    SystemChrome.setPreferredOrientations([
-      DeviceOrientation.landscapeLeft,
-      DeviceOrientation.landscapeRight,
-    ]);
+    if (!kIsWeb) {
+      SystemChrome.setPreferredOrientations([
+        DeviceOrientation.landscapeLeft,
+        DeviceOrientation.landscapeRight,
+      ]);
+    }
 
     _initializeAnimations();
     _initializeGame();
     _initializeSensors();
     _initializeAudio();
+    unawaited(web_sensors.requestMotionPermission());
   }
 
   void _initializeAnimations() {
@@ -147,8 +153,14 @@ class _GameScreenState extends ConsumerState<GameScreen>
   }
 
   void _initializeSensors() {
+    final accelerometerStream = accelerometerEvents;
+    if (accelerometerStream == null) {
+      debugPrint('Accelerometer not available on this platform');
+      return;
+    }
+
     _streamSubscriptions.add(
-      accelerometerEvents!.listen(
+      accelerometerStream.listen(
         (AccelerometerEvent event) {
           // Only process sensor data if game is active and mounted
           if (!_isGameActive || !mounted) return;
@@ -197,9 +209,12 @@ class _GameScreenState extends ConsumerState<GameScreen>
     _tiltUnlockTime = DateTime.now().add(_tiltActivationDelay);
     _lastTiltAction = null;
     _smoothedZ = 0;
-    unawaited(
-      SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky),
-    );
+    if (!kIsWeb) {
+      unawaited(
+        SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky),
+      );
+    }
+    unawaited(web_orientation.lockLandscape());
 
     setState(() {
       _isGameActive = true;
@@ -312,13 +327,13 @@ class _GameScreenState extends ConsumerState<GameScreen>
       // For now, we'll use system sounds via haptic feedback
       switch (soundType) {
         case 'success':
-         GameHelpers.playSound(type: SoundType.correct);
+          GameHelpers.playSound(type: SoundType.correct);
           break;
         case 'skip':
-           GameHelpers.playSound(type: SoundType.skip);
+          GameHelpers.playSound(type: SoundType.skip);
           break;
         case 'end':
-             GameHelpers.playSound(type: SoundType.gameEnd);
+          GameHelpers.playSound(type: SoundType.gameEnd);
           break;
       }
     } catch (e) {
@@ -348,7 +363,10 @@ class _GameScreenState extends ConsumerState<GameScreen>
 
     _tiltUnlockTime = null;
     _lastTiltAction = null;
-    unawaited(SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge));
+    if (!kIsWeb) {
+      unawaited(SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge));
+    }
+    unawaited(web_orientation.unlockOrientation());
 
     final lastIndex = _gameWords.isEmpty ? 0 : _gameWords.length - 1;
     setState(() {
@@ -443,15 +461,21 @@ class _GameScreenState extends ConsumerState<GameScreen>
     // Dispose audio player
     _audioPlayer?.dispose();
 
-    unawaited(SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge));
+    if (!kIsWeb) {
+      unawaited(SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge));
+    }
 
-    // Reset orientation to allow all orientations when leaving game
-    SystemChrome.setPreferredOrientations([
-      DeviceOrientation.portraitUp,
-      DeviceOrientation.portraitDown,
-      DeviceOrientation.landscapeLeft,
-      DeviceOrientation.landscapeRight,
-    ]);
+    unawaited(web_orientation.unlockOrientation());
+
+    if (!kIsWeb) {
+      // Reset orientation to allow all orientations when leaving game
+      SystemChrome.setPreferredOrientations([
+        DeviceOrientation.portraitUp,
+        DeviceOrientation.portraitDown,
+        DeviceOrientation.landscapeLeft,
+        DeviceOrientation.landscapeRight,
+      ]);
+    }
 
     super.dispose();
   }
