@@ -8,7 +8,6 @@ ios/
 linux/
 macos/
 windows/
-web/
 .idea/
 .git/
 .gitignore
